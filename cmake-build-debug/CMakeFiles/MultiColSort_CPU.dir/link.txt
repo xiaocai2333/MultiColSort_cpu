@@ -1,0 +1,1 @@
+/usr/bin/c++  -g   CMakeFiles/MultiColSort_CPU.dir/main.cpp.o  -o MultiColSort_CPU 
