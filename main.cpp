@@ -1,82 +1,121 @@
 #include <iostream>
 #include <algorithm>
 #include <stdlib.h>
+#include <ratio>
+#include <ctime>
+#include <chrono>
 
-#define ROW 100
+#define ROW 1000000
 #define COL 5
+
 using namespace std;
 
-void OneColumnSort(int *p[ROW], int begin, int end, int colum){
-    for(int i = begin; i < end; i++){
-        for(int j = i; j < end; j++){
-            if(*(p[i] + colum) > *(p[j] + colum)){
-                swap(p[i], p[j]);
+void OneColumnSort(int *Curcol, int *row_index, int begin, int end){
+    for (int i = begin; i < end; ++i) {
+        for (int j = i; j < end; ++j) {
+            if(Curcol[i] > Curcol[j]){
+                swap(Curcol[i], Curcol[j]);
+                swap(row_index[i], row_index[j]);
             }
         }
     }
 }
 
-void Tag(int *row, int *p[ROW], int i){
+void Tag(int *group, int *CurrentCol){
     int tag = 0;
-    for(int j = 0; j < 9; j++){
-        row[j] = tag;
-        row[j+1] = tag+1;
-        if(row[j] < row[j+1]){
+    for(int j = 0; j < ROW - 1; j++){
+        if(group[j] != group[j+1]){
+            group[j] = tag;
             tag++;
-        }
-        else if(*(p[j] + (i-1)) != *(p[j+1] + i-1)){
-            tag++;
+        } else{
+            group[j] = tag;
+            if(CurrentCol[j] != CurrentCol[j+1]){
+                tag++;
+            }
         }
 
+
     }
-    row[ROW-1] = tag;
+    group[ROW-1] = tag;
 }
+
 int main() {
-    int row_index[ROW];
-    int test[ROW][COL];
+    int32_t *row_index = (int32_t *) malloc(sizeof(int32_t) * ROW);
+    int* group = (int *) malloc(sizeof(int) * ROW);
+    int** test = new int*[ROW];
+    for (int k = 0; k < ROW; k++) {
+        test[k] = new int[COL];
+    }
+    int* CurCol = (int *) malloc(sizeof(int) * ROW);
+    using namespace std::chrono;
+
 //    生成随机数组
-    for (int k = 0; k < ROW; ++k) {
-        for (int m = 0; m < COL; ++m) {
-            test[k][m] = rand() % 5;
+    for (int k = 0; k < ROW; k++) {
+        for (int m = 0; m < COL; m++) {
+            test[k][m] = rand() % 100;
         }
     }
-//    生成指针数组p指向test
-    int *p[ROW];
+//    生成初始化row_index
     for (int i = 0; i < ROW; ++i) {
-        p[i] = test[i];
-        row_index[i] = 0;
+        row_index[i] = i;
+        group[i] = 0;
     }
 //    输出原始数组
 //    for(int i = 0; i < ROW; i++){
 //        for(int j = 0; j < COL; j++){
-//            std::cout<< *(p[i] + j) << "\t";
+//            std::cout<< test[i][j] << "\t";
 //        }
 //        std::cout<< std::endl;
 //    }
+
 //    进行多键值排序
-    for(int i = 0; i < ROW; i++){
+    high_resolution_clock::time_point starttime = high_resolution_clock::now();
+    for(int i = 0; i < COL; i++){
+        //      取出待排序列
+        for (int l = 0; l < ROW; ++l) {
+            CurCol[l] = test[row_index[l]][i];
+        }
         int begin = 0;
         int end = ROW;
         if(i != 0){
-            Tag(row_index, p, i);
             for(int j = 0; j < ROW; j++){
-                if(row_index[j] != row_index[j+1]){
+                if(group[j] != group[j+1]){
                     end = j+1;
-                    OneColumnSort(p, begin, end, i);
+                    OneColumnSort(CurCol, row_index, begin, end);
                     begin = j+1;
                 }
             }
+
         }
-        if(i == 0)
-            OneColumnSort(p, begin, end, i);
+        if(i == 0){
+            OneColumnSort(CurCol, row_index, begin, end);
+        }
+        Tag(group, CurCol);
+
+//        for (int l = 0; l < ROW; ++l) {
+//            std::cout<< group[l] << "\t";
+//        }
+//        std::cout<< std::endl;
+//        std::cout<< "************************************************************************************\n";
+        for (int k = 0; k < ROW; ++k) {
+            test[k][i] = CurCol[k];
+        }
     }
+    high_resolution_clock::time_point endtime = high_resolution_clock::now();
     std::cout<< "************************************************************************************\n";
 //    输出排序后的数组
-    for(int i = 0; i < ROW; i++){
-        std::cout<< std::endl;
-        for(int j = 0; j < COL; j++){
-            std::cout<< *(p[i] + j) << "\t";
-        }
-    }
+//    for(int i = 0; i < ROW; i++){
+//        for(int j = 0; j < COL; j++){
+//            std::cout<< test[i][j] << "\t";
+//        }
+//        std::cout<< std::endl;
+//    }
 
+//    程序运行时间
+    duration<double> time_span = duration_cast<duration<double>>(endtime - starttime);
+    std::cout<< "totaltime = " << time_span.count() << "s" << std::endl;
+    for (int l = 0; l < ROW; ++l) {
+        delete test[l];
+    }
+    delete[] test;
 }
